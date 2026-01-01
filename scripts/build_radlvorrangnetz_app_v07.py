@@ -6,8 +6,8 @@ import geopandas as gpd
 import pandas as pd
 
 
-INPUT = "IST_RadlVorrangNetz_MunichWays_V20.geojson"
-OUTPUT = "radlvorrangnetz_app_V07.geojson"
+INPUT = "data/IST_RadlVorrangNetz_MunichWays_V20.geojson"
+OUTPUT = "data/radlvorrangnetz_app_V07.geojson"
 
 DEFAULT_MAPILLARY_ID = "211265577336913"
 
@@ -159,3 +159,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
