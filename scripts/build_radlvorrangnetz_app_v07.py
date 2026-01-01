@@ -129,8 +129,8 @@ def main():
         {
             "cartodb_id": 0,
             "name": name,
-            "strecke": pd.NA,
-            "MW_RV_Strecke": MW_RV_Strecke,
+            "strecke": None,
+            "mw_rv_strecke": MW_RV_Strecke,
             "ist_situation": ist_situation,
             "happy_bike_level": happy_bike_level,
             "soll_massnahmen": munichways_target,
@@ -141,8 +141,8 @@ def main():
             "links": mw_links,
             "farbe": farbe,
             "mapillary_img_id": mapillary_img_id,
-            "bezirk_nummer": pd.NA,
-            "bezirk_name": pd.NA,
+            "bezirk_nummer": None,
+            "bezirk_name": None,
             "netztyp_id": 4,
             "strecken_link": strecken_link,
             "last_updated": last_updated,
@@ -159,4 +159,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
