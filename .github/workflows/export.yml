@@ -29,12 +29,18 @@ jobs:
             -o data/IST_RadlVorrangNetz_MunichWays_V20.geojson \
             "https://www.munichways.de/App/IST_RadlVorrangNetz_MunichWays_V20.geojson"
 
-      - name: Run export
+      - name: Run export (App V07)
         run: |
           python scripts/build_radlvorrangnetz_app_v07.py
 
-      - name: Upload artifact
+      - name: Run export (Status Umsetzung)
+        run: |
+          python scripts/build_status_umsetzung.py
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: radlvorrangnetz_app_V07
-          path: data/radlvorrangnetz_app_V07.geojson
+          name: geojson_exports
+          path: |
+            data/radlvorrangnetz_app_V07.geojson
+            data/Status_Umsetzung_Radentscheid.geojson
