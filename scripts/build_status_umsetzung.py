@@ -3,12 +3,14 @@
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, List, Optional
+from urllib.parse import urlparse, parse_qs
 
 INPUT = "data/IST_RadlVorrangNetz_MunichWays_V20.geojson"
 OUTPUT = "data/Status_Umsetzung_Radentscheid.geojson"
 
 FIELD = "munichways_status_implementation"
+MAPILLARY_LINK_FIELD = "munichways_mapillary_link"
 
 ALLOWED: List[str] = [
     "beschlossen",
@@ -36,6 +38,29 @@ def clean_status(value: Optional[Any]) -> Optional[str]:
     return None
 
 
+def extract_mapillary_img_id_from_link(value: Optional[Any]) -> Optional[str]:
+    """
+    Extrahiert pKey aus einem Mapillary-Link, z.B.:
+    https://www.mapillary.com/app/?pKey=1713341692468300  -> "1713341692468300"
+    """
+    if not isinstance(value, str):
+        return None
+    value = value.strip()
+    if not value or value == "-":
+        return None
+
+    try:
+        parsed = urlparse(value)
+        qs = parse_qs(parsed.query)
+        pkeys = qs.get("pKey") or qs.get("pkey")
+        if not pkeys:
+            return None
+        pkey = (pkeys[0] or "").strip()
+        return pkey or None
+    except Exception:
+        return None
+
+
 def main() -> None:
     in_path = Path(INPUT)
     out_path = Path(OUTPUT)
@@ -55,6 +80,12 @@ def main() -> None:
         if cleaned:
             # Feld bereinigen (1:1 sonst unverändert)
             props[FIELD] = cleaned
+
+            # mapillary_img_id zusätzlich aus munichways_mapillary_link ergänzen
+            props["mapillary_img_id"] = extract_mapillary_img_id_from_link(
+                props.get(MAPILLARY_LINK_FIELD)
+            )
+
             kept.append(feature)
 
     out = dict(data)
