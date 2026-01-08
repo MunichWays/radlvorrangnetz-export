@@ -4,11 +4,13 @@
 import json
 from pathlib import Path
 from typing import Any, List, Optional
+from urllib.parse import urlparse, parse_qs
 
 INPUT = "data/IST_RadlVorrangNetz_MunichWays_V20.geojson"
 OUTPUT = "data/ZIEL_RadlVorrangNetz.geojson"
 
 FIELD = "munichways_net_type_target"
+MAPILLARY_LINK_FIELD = "munichways_mapillary_link"
 
 ALLOWED: List[str] = [
     "1_Rad-Ring",
@@ -22,7 +24,6 @@ ALLOWED: List[str] = [
 def split_tokens(value: Optional[Any]) -> List[str]:
     if not isinstance(value, str):
         return []
-    # Komma-separierte Werte, Whitespace trimmen, leere entfernen
     return [t.strip() for t in value.split(",") if t.strip()]
 
 
@@ -36,6 +37,29 @@ def clean_value(value: Optional[Any]) -> Optional[str]:
         if v in tokens:
             return v
     return None
+
+
+def extract_mapillary_img_id_from_link(value: Optional[Any]) -> Optional[str]:
+    """
+    Extrahiert pKey aus einem Mapillary-Link, z.B.:
+    https://www.mapillary.com/app/?pKey=1713341692468300
+    """
+    if not isinstance(value, str):
+        return None
+    value = value.strip()
+    if not value or value == "-":
+        return None
+
+    try:
+        parsed = urlparse(value)
+        qs = parse_qs(parsed.query)
+        pkeys = qs.get("pKey") or qs.get("pkey")
+        if not pkeys:
+            return None
+        pkey = (pkeys[0] or "").strip()
+        return pkey or None
+    except Exception:
+        return None
 
 
 def main() -> None:
@@ -54,8 +78,10 @@ def main() -> None:
         cleaned = clean_value(props.get(FIELD))
 
         if cleaned:
-            # Feld bereinigen (1:1 sonst unverändert)
             props[FIELD] = cleaned
+            props["mapillary_img_id"] = extract_mapillary_img_id_from_link(
+                props.get(MAPILLARY_LINK_FIELD)
+            )
             kept.append(feature)
 
     out = dict(data)
