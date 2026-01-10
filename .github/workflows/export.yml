@@ -3,7 +3,8 @@ name: Build RadlVorrangNetz App GeoJSON
 on:
   workflow_dispatch:
   schedule:
-    - cron: "0 17 22-31 * 0"  # Sonntage zwischen 22.–31. um 17:00 UTC (18 MEZ / 19 MESZ) → vorletzter + letzter Sonntag (manchmal nur einer)
+    - cron: "0 17 * * 0"       # wöchentlich jeden Sonntag um 17:00 UTC (18 MEZ / 19 MESZ)
+  #  - cron: "0 17 22-31 * 0"  # letzter Sonntag im Monat zwischen 22.–31. um 17:00 UTC (18 MEZ / 19 MESZ) → manchmal auch vorletzter 
 
 jobs:
   build:
