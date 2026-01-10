@@ -33,6 +33,14 @@ jobs:
         run: |
           python scripts/build_radlvorrangnetz_app_v07.py
 
+      - name: Run export (ALL RadlVorrang-Netz Ist)
+        run: |
+          python scripts/build_all_radlvorrangnetz_ist.py
+
+      - name: Run export (NUR RadlVorrang-Netz Ist)
+        run: |
+          python scripts/build_nur_radlvorrangnetz_ist.py          
+
       - name: Run export (Status Umsetzung)
         run: |
           python scripts/build_status_umsetzung.py
@@ -40,10 +48,6 @@ jobs:
       - name: Run export (Ziel RadlVorrang-Netz)
         run: |
           python scripts/build_ziel_radlvorrangnetz.py
-
-      - name: Run export (NUR RadlVorrang-Netz Ist)
-        run: |
-          python scripts/build_nur_radlvorrangnetz_ist.py
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
