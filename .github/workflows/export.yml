@@ -56,6 +56,7 @@ jobs:
           name: geojson_exports
           path: |
             data/radlvorrangnetz_app_V07.geojson
+            data/ALL_RadlVorrangNetz_Ist.geojson
+            data/NUR_RadlVorrangNetz_Ist.geojson
             data/Status_Umsetzung_Radentscheid.geojson
             data/ZIEL_RadlVorrangNetz.geojson
-            data/NUR_RadlVorrangNetz_Ist.geojson
