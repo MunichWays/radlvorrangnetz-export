@@ -56,8 +56,8 @@ def main():
     mapillary_link = s("munichways_mapillary_link")
     route_link = s("munichways_route_link")
 
-    # name = COALESCE(osm_name, munichways_name, osm_surface, NULL)
-    name = coalesce_series(osm_name, munichways_name, osm_surface)
+    # name = COALESCE(munichways_name, osm_name, osm_surface, NULL)
+    name = coalesce_series(munichways_name, osm_name, osm_surface)
 
     # MW_RV_Strecke = COALESCE(munichways_mw_rv_route, '-')
     MW_RV_Strecke = mw_rv_route.fillna("-")
@@ -159,5 +159,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
