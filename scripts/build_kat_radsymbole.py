@@ -2,6 +2,8 @@
 # -*- coding: utf-8 -*-
 
 import json
+import re
+from html import unescape
 from pathlib import Path
 from typing import Any, List, Optional
 from urllib.parse import urlparse, parse_qs
@@ -17,31 +19,54 @@ ALLOWED: List[str] = [
 ]
 
 
-def split_tokens(value: Optional[Any]) -> List[str]:
+def extract_link_text(value: Optional[Any]) -> Optional[str]:
+    """
+    Extrahiert den sichtbaren Text aus einem HTML-Link.
+    Beispiel:
+    <a href="...">Fahrrad Symbole </a> -> "Fahrrad Symbole"
+    """
     if not isinstance(value, str):
-        return []
-    return [t.strip() for t in value.split(",") if t.strip()]
+        return None
+
+    value = value.strip()
+    if not value:
+        return None
+
+    # HTML entities zurückwandeln
+    value = unescape(value)
+
+    # Inhalt zwischen > ... <
+    m = re.search(r'>([^<]+)<', value)
+    if m:
+        return m.group(1).strip()
+
+    # Falls doch mal Klartext ohne HTML kommt
+    return value.strip()
 
 
-def clean_status(value: Optional[Any]) -> Optional[str]:
+def clean_category(value: Optional[Any]) -> Optional[str]:
     """
-    Gibt genau einen bereinigten Status zurück (oder None).
-    Priorität entsprechend Reihenfolge in ALLOWED.
+    Gibt genau eine bereinigte Kategorie zurück (oder None).
     """
-    tokens = split_tokens(value)
-    for status in ALLOWED:
-        if status in tokens:
-            return status
+    text = extract_link_text(value)
+    if not text:
+        return None
+
+    for category in ALLOWED:
+        if text == category:
+            return category
+
     return None
 
 
 def extract_mapillary_img_id_from_link(value: Optional[Any]) -> Optional[str]:
     """
     Extrahiert pKey aus einem Mapillary-Link, z.B.:
-    https://www.mapillary.com/app/?pKey=1713341692468300  -> "1713341692468300"
+    https://www.mapillary.com/app/?pKey=1713341692468300 -> "1713341692468300"
     """
     if not isinstance(value, str):
         return None
+
     value = value.strip()
     if not value or value == "-":
         return None
@@ -72,13 +97,13 @@ def main() -> None:
             continue
 
         props = feature.get("properties") or {}
-        cleaned = clean_status(props.get(FIELD))
+        cleaned = clean_category(props.get(FIELD))
 
         if cleaned:
-            # Feld bereinigen (1:1 sonst unverändert)
+            # Feld bereinigen: nur noch Klartext
             props[FIELD] = cleaned
 
-            # mapillary_img_id zusätzlich aus munichways_mapillary_link ergänzen
+            # mapillary_img_id aus munichways_mapillary_link ergänzen
             props["mapillary_img_id"] = extract_mapillary_img_id_from_link(
                 props.get(MAPILLARY_LINK_FIELD)
             )
@@ -89,7 +114,10 @@ def main() -> None:
     out["features"] = kept
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
-    out_path.write_text(json.dumps(out, ensure_ascii=False), encoding="utf-8")
+    out_path.write_text(
+        json.dumps(out, ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
 
     print(f"Input features: {len(features)}")
     print(f"Output features: {len(kept)}")
