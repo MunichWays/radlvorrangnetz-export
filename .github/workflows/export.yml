@@ -50,9 +50,9 @@ jobs:
         run: |
           python scripts/build_ziel_radlvorrangnetz.py
 
-      - name: Run export (Kategorie Fahrrad Symbole)
+      - name: Run export (Kategorie Markierungen)
         run: |
-          python scripts/build_kat_radsymbole.py   
+          python scripts/build_kat_markierungen.py   
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
