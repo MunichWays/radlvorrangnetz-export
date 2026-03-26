@@ -64,4 +64,4 @@ jobs:
             data/NUR_RadlVorrangNetz_Ist.geojson
             data/Status_Umsetzung_Radentscheid.geojson
             data/ZIEL_RadlVorrangNetz.geojson
-            data/Kategorie_Radsymbole.geojson
+            data/Kategorie_Markierungen.geojson
