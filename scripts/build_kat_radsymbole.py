@@ -9,13 +9,14 @@ from typing import Any, List, Optional
 from urllib.parse import urlparse, parse_qs
 
 INPUT = "data/IST_RadlVorrangNetz_MunichWays_V20.geojson"
-OUTPUT = "data/Kategorie_Radsymbole.geojson"
+OUTPUT = "data/Kategorie_Markierungen.geojson"
 
 FIELD = "munichways_measure_category_link"
 MAPILLARY_LINK_FIELD = "munichways_mapillary_link"
 
 ALLOWED: List[str] = [
     "Fahrrad Symbole",
+    "Dooring-Schutzstreifen",
 ]
 
 
