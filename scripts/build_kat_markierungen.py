@@ -13,18 +13,28 @@ OUTPUT = "data/Kategorie_Markierungen.geojson"
 
 FIELD = "munichways_measure_category_link"
 MAPILLARY_LINK_FIELD = "munichways_mapillary_link"
+DISTRICT_FIELD = "munichways_district_link"
 
 ALLOWED: List[str] = [
     "Fahrrad Symbole",
     "Dooring-Schutzstreifen",
 ]
 
+ALLOWED_BA = {
+    "BA01", "BA02", "BA03", "BA04", "BA05",
+    "BA06", "BA07", "BA08", "BA09", "BA10",
+    "BA11", "BA12", "BA13", "BA14", "BA15",
+    "BA16", "BA17", "BA18", "BA19", "BA20",
+    "BA21", "BA22", "BA23", "BA24", "BA25",
+}
+
 
 def extract_link_text(value: Optional[Any]) -> Optional[str]:
     """
     Extrahiert den sichtbaren Text aus einem HTML-Link.
-    Beispiel:
+    Beispiele:
     <a href="...">Fahrrad Symbole </a> -> "Fahrrad Symbole"
+    <a href="..."> BA22 Aubing-Lochhausen-Langwied</a> -> "BA22 Aubing-Lochhausen-Langwied"
     """
     if not isinstance(value, str):
         return None
@@ -33,21 +43,18 @@ def extract_link_text(value: Optional[Any]) -> Optional[str]:
     if not value:
         return None
 
-    # HTML entities zurückwandeln
     value = unescape(value)
 
-    # Inhalt zwischen > ... <
     m = re.search(r'>([^<]+)<', value)
     if m:
         return m.group(1).strip()
 
-    # Falls doch mal Klartext ohne HTML kommt
     return value.strip()
 
 
 def clean_category(value: Optional[Any]) -> Optional[str]:
     """
-    Gibt genau eine bereinigte Kategorie zurück (oder None).
+    Gibt genau eine bereinigte Kategorie zurück - oder None.
     """
     text = extract_link_text(value)
     if not text:
@@ -60,9 +67,28 @@ def clean_category(value: Optional[Any]) -> Optional[str]:
     return None
 
 
+def is_munich_ba_district(value: Optional[Any]) -> bool:
+    """
+    True nur für Datensätze mit BA01 bis BA25.
+    Beispiele:
+    "Puchheim" -> False
+    "<a ...> BA22 Aubing-Lochhausen-Langwied</a>" -> True
+    """
+    text = extract_link_text(value)
+    if not text:
+        return False
+
+    for ba in ALLOWED_BA:
+        if ba in text:
+            return True
+
+    return False
+
+
 def extract_mapillary_img_id_from_link(value: Optional[Any]) -> Optional[str]:
     """
-    Extrahiert pKey aus einem Mapillary-Link, z.B.:
+    Extrahiert pKey aus einem Mapillary-Link.
+    Beispiel:
     https://www.mapillary.com/app/?pKey=1713341692468300 -> "1713341692468300"
     """
     if not isinstance(value, str):
@@ -98,18 +124,21 @@ def main() -> None:
             continue
 
         props = feature.get("properties") or {}
-        cleaned = clean_category(props.get(FIELD))
 
-        if cleaned:
-            # Feld bereinigen: nur noch Klartext
-            props[FIELD] = cleaned
+        cleaned_category = clean_category(props.get(FIELD))
+        if not cleaned_category:
+            continue
 
-            # mapillary_img_id aus munichways_mapillary_link ergänzen
-            props["mapillary_img_id"] = extract_mapillary_img_id_from_link(
-                props.get(MAPILLARY_LINK_FIELD)
-            )
+        if not is_munich_ba_district(props.get(DISTRICT_FIELD)):
+            continue
 
-            kept.append(feature)
+        props[FIELD] = cleaned_category
+
+        props["mapillary_img_id"] = extract_mapillary_img_id_from_link(
+            props.get(MAPILLARY_LINK_FIELD)
+        )
+
+        kept.append(feature)
 
     out = dict(data)
     out["features"] = kept
