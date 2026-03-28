@@ -4,13 +4,18 @@
 import json
 from pathlib import Path
 from typing import Any, List, Optional
-from urllib.parse import urlparse, parse_qs
+
+from helpers_munichways import (
+    extract_mapillary_img_id_from_link,
+    is_munich_ba_district,
+)
 
 INPUT = "data/IST_RadlVorrangNetz_MunichWays_V20.geojson"
 OUTPUT = "data/Status_Umsetzung_Radentscheid.geojson"
 
 FIELD = "munichways_status_implementation"
 MAPILLARY_LINK_FIELD = "munichways_mapillary_link"
+DISTRICT_FIELD = "munichways_district_link"
 
 ALLOWED: List[str] = [
     "beschlossen",
@@ -28,7 +33,7 @@ def split_tokens(value: Optional[Any]) -> List[str]:
 
 def clean_status(value: Optional[Any]) -> Optional[str]:
     """
-    Gibt genau einen bereinigten Status zurück (oder None).
+    Gibt genau einen bereinigten Status zurück - oder None.
     Priorität entsprechend Reihenfolge in ALLOWED.
     """
     tokens = split_tokens(value)
@@ -36,29 +41,6 @@ def clean_status(value: Optional[Any]) -> Optional[str]:
         if status in tokens:
             return status
     return None
-
-
-def extract_mapillary_img_id_from_link(value: Optional[Any]) -> Optional[str]:
-    """
-    Extrahiert pKey aus einem Mapillary-Link, z.B.:
-    https://www.mapillary.com/app/?pKey=1713341692468300  -> "1713341692468300"
-    """
-    if not isinstance(value, str):
-        return None
-    value = value.strip()
-    if not value or value == "-":
-        return None
-
-    try:
-        parsed = urlparse(value)
-        qs = parse_qs(parsed.query)
-        pkeys = qs.get("pKey") or qs.get("pkey")
-        if not pkeys:
-            return None
-        pkey = (pkeys[0] or "").strip()
-        return pkey or None
-    except Exception:
-        return None
 
 
 def main() -> None:
@@ -75,18 +57,21 @@ def main() -> None:
             continue
 
         props = feature.get("properties") or {}
+
         cleaned = clean_status(props.get(FIELD))
+        if not cleaned:
+            continue
 
-        if cleaned:
-            # Feld bereinigen (1:1 sonst unverändert)
-            props[FIELD] = cleaned
+        if not is_munich_ba_district(props.get(DISTRICT_FIELD)):
+            continue
 
-            # mapillary_img_id zusätzlich aus munichways_mapillary_link ergänzen
-            props["mapillary_img_id"] = extract_mapillary_img_id_from_link(
-                props.get(MAPILLARY_LINK_FIELD)
-            )
+        props[FIELD] = cleaned
 
-            kept.append(feature)
+        props["mapillary_img_id"] = extract_mapillary_img_id_from_link(
+            props.get(MAPILLARY_LINK_FIELD)
+        )
+
+        kept.append(feature)
 
     out = dict(data)
     out["features"] = kept
