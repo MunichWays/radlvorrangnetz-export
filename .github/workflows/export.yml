@@ -7,6 +7,9 @@ on:
   #     - cron: "0 17 * * 0"       # wöchentlich jeden Sonntag um 17:00 UTC (18 MEZ / 19 MESZ)  
   #  - cron: "0 17 22-31 * 0"  # letzter Sonntag im Monat zwischen 22.–31. um 17:00 UTC (18 MEZ / 19 MESZ) → manchmal auch vorletzter 
 
+permissions:
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -59,6 +62,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: geojson_exports
+          if-no-files-found: error
           path: |
             data/radlvorrangnetz_app_V07.geojson
             data/ALL_RadlVorrangNetz_Ist.geojson
@@ -66,3 +70,100 @@ jobs:
             data/Status_Umsetzung_Radentscheid.geojson
             data/ZIEL_RadlVorrangNetz.geojson
             data/Kategorie_Markierungen.geojson
+
+      - name: Prepare FTP upload
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          DEPLOY_TIME="$(date -u +'%Y-%m-%d_%H-%M-%S')"
+          echo "DEPLOY_TIME=$DEPLOY_TIME" >> "$GITHUB_ENV"
+
+          mkdir -p ftp-upload/current ftp-upload/save
+
+          files=(
+            radlvorrangnetz_app_V07.geojson
+            ALL_RadlVorrangNetz_Ist.geojson
+            NUR_RadlVorrangNetz_Ist.geojson
+            Status_Umsetzung_Radentscheid.geojson
+            ZIEL_RadlVorrangNetz.geojson
+            Kategorie_Markierungen.geojson
+          )
+
+          for file in "${files[@]}"; do
+            cp "data/$file" "ftp-upload/current/$file"
+            cp "data/$file" "ftp-upload/save/${file%.geojson}_$DEPLOY_TIME.geojson"
+          done
+
+      - name: Install lftp
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes lftp
+
+      - name: Upload GeoJSON files to webspace
+        shell: bash
+        env:
+          FTP_SERVER: ${{ vars.FTP_SERVER }}
+          FTP_USERNAME: ${{ vars.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_TARGET_PATH: .
+          FTP_SAVE_PATH: /save
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$FTP_SERVER" || -z "$FTP_USERNAME" || -z "$FTP_PASSWORD" ]]; then
+            echo "::error::FTP_SERVER and FTP_USERNAME must be Repository Variables; FTP_PASSWORD must be a Repository Secret."
+            exit 1
+          fi
+
+          lftp "$FTP_SERVER" <<EOF
+          set cmd:fail-exit yes
+          set ftp:ssl-force yes
+          set ftp:ssl-protect-data yes
+          set ssl:verify-certificate yes
+          user "$FTP_USERNAME" "$FTP_PASSWORD"
+
+          mkdir -p "$FTP_SAVE_PATH"
+
+          mirror --reverse --overwrite --verbose ftp-upload/current "$FTP_TARGET_PATH"
+          mirror --reverse --overwrite --verbose ftp-upload/save "$FTP_SAVE_PATH"
+
+          bye
+          EOF
+
+      - name: Verify FTP upload
+        shell: bash
+        env:
+          FTP_SERVER: ${{ vars.FTP_SERVER }}
+          FTP_USERNAME: ${{ vars.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+          FTP_TARGET_PATH: .
+          FTP_SAVE_PATH: /save
+        run: |
+          set -euo pipefail
+
+          files=(
+            radlvorrangnetz_app_V07.geojson
+            ALL_RadlVorrangNetz_Ist.geojson
+            NUR_RadlVorrangNetz_Ist.geojson
+            Status_Umsetzung_Radentscheid.geojson
+            ZIEL_RadlVorrangNetz.geojson
+            Kategorie_Markierungen.geojson
+          )
+
+          for file in "${files[@]}"; do
+            backup="${file%.geojson}_$DEPLOY_TIME.geojson"
+
+            lftp "$FTP_SERVER" <<EOF
+            set cmd:fail-exit yes
+            set ftp:ssl-force yes
+            set ftp:ssl-protect-data yes
+            set ssl:verify-certificate yes
+            user "$FTP_USERNAME" "$FTP_PASSWORD"
+            cls "$FTP_TARGET_PATH/$file"
+            cls "$FTP_SAVE_PATH/$backup"
+            bye
+          EOF
+          done
+
+          echo "Successfully uploaded and verified ${#files[@]} current files and ${#files[@]} backups."
