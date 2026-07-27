@@ -116,13 +116,12 @@ jobs:
             exit 1
           fi
 
-          lftp "$FTP_SERVER" <<EOF
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER" <<EOF
           set cmd:fail-exit yes
           set ftp:ssl-force yes
           set ftp:ssl-protect-data yes
           set ssl:verify-certificate yes
           set ssl:check-hostname no
-          user "$FTP_USERNAME" "$FTP_PASSWORD"
 
           mkdir -p "$FTP_SAVE_PATH"
 
@@ -155,13 +154,12 @@ jobs:
           for file in "${files[@]}"; do
             backup="${file%.geojson}_$DEPLOY_TIME.geojson"
 
-            lftp "$FTP_SERVER" <<EOF
+            lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER" <<EOF
             set cmd:fail-exit yes
             set ftp:ssl-force yes
             set ftp:ssl-protect-data yes
             set ssl:verify-certificate yes
             set ssl:check-hostname no
-            user "$FTP_USERNAME" "$FTP_PASSWORD"
             cls "$FTP_TARGET_PATH/$file"
             cls "$FTP_SAVE_PATH/$backup"
             bye
