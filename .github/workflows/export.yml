@@ -121,6 +121,7 @@ jobs:
           set ftp:ssl-force yes
           set ftp:ssl-protect-data yes
           set ssl:verify-certificate yes
+          set ssl:check-hostname no
           user "$FTP_USERNAME" "$FTP_PASSWORD"
 
           mkdir -p "$FTP_SAVE_PATH"
@@ -159,6 +160,7 @@ jobs:
             set ftp:ssl-force yes
             set ftp:ssl-protect-data yes
             set ssl:verify-certificate yes
+            set ssl:check-hostname no
             user "$FTP_USERNAME" "$FTP_PASSWORD"
             cls "$FTP_TARGET_PATH/$file"
             cls "$FTP_SAVE_PATH/$backup"
