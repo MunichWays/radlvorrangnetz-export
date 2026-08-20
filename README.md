@@ -14,6 +14,11 @@ Trinkwasserstellen aus OpenStreetMap für den Regierungsbezirk Oberbayern nach
 `App/poi/drinking_water.geojson` auf dem Webspace. Manuell kann die Datei mit
 folgendem Befehl erzeugt werden:
 
+Exportiert werden ausschließlich Objekte, die ausdrücklich mit
+`drinking_water=yes` gekennzeichnet sind. Die FeatureCollection enthält den
+Erstellungszeitpunkt in UTC. Neben der aktuellen Datei wird jeder Export unter
+`App/save/drinking_water_<Zeitstempel>.geojson` archiviert.
+
 ```shell
 python scripts/build_osm_drinking_water.py
 ```

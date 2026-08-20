@@ -4,6 +4,7 @@
 import argparse
 import json
 import time
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 from urllib.error import HTTPError, URLError
@@ -17,7 +18,7 @@ DEFAULT_OUTPUT = "data/poi/drinking_water.geojson"
 OVERPASS_QUERY = """[out:json][timeout:90];
 area["boundary"="administrative"]["admin_level"="5"]["name"="Oberbayern"]->.searchArea;
 (
-  nwr["amenity"="drinking_water"]
+  nwr["amenity"="drinking_water"]["drinking_water"="yes"]
     ["access"!~"^(private|no|customers|permit|delivery|destination)$"]
     (area.searchArea);
   nwr["man_made"="water_tap"]["drinking_water"="yes"]
@@ -64,8 +65,17 @@ def element_coordinates(element: dict[str, Any]) -> tuple[float, float] | None:
     return None
 
 
-def to_geojson(overpass_data: dict[str, Any]) -> dict[str, Any]:
+def to_geojson(
+    overpass_data: dict[str, Any], generated_at: str | None = None
+) -> dict[str, Any]:
     """Convert Overpass JSON elements to a point FeatureCollection for uMap."""
+    if generated_at is None:
+        generated_at = (
+            datetime.now(timezone.utc)
+            .isoformat(timespec="seconds")
+            .replace("+00:00", "Z")
+        )
+
     features = []
     seen: set[tuple[str, int]] = set()
 
@@ -94,7 +104,11 @@ def to_geojson(overpass_data: dict[str, Any]) -> dict[str, Any]:
         )
 
     features.sort(key=lambda feature: (feature["properties"]["osm_type"], feature["properties"]["osm_id"]))
-    return {"type": "FeatureCollection", "features": features}
+    return {
+        "type": "FeatureCollection",
+        "properties": {"schemaVersion": 1, "generatedAt": generated_at},
+        "features": features,
+    }
 
 
 def main() -> None:

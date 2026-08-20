@@ -26,6 +26,10 @@ jobs:
       - name: Export drinking-water POIs
         run: python scripts/build_osm_drinking_water.py
 
+      - name: Set backup filename
+        shell: bash
+        run: echo "DEPLOY_TIME=$(date -u +'%Y-%m-%d_%H-%M-%S')" >> "$GITHUB_ENV"
+
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -59,7 +63,10 @@ jobs:
           set ssl:verify-certificate yes
           set ssl:check-hostname no
           mkdir -p "poi"
+          mkdir -p "save"
           put -O "poi" "data/poi/drinking_water.geojson"
+          put "data/poi/drinking_water.geojson" -o "save/drinking_water_$DEPLOY_TIME.geojson"
           cls "poi/drinking_water.geojson"
+          cls "save/drinking_water_$DEPLOY_TIME.geojson"
           bye
           EOF
