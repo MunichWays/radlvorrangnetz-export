@@ -62,8 +62,10 @@ jobs:
           set ftp:ssl-protect-data yes
           set ssl:verify-certificate yes
           set ssl:check-hostname no
+          set cmd:fail-exit no
           mkdir -p "poi"
           mkdir -p "save"
+          set cmd:fail-exit yes
           put -O "poi" "data/poi/drinking_water.geojson"
           put "data/poi/drinking_water.geojson" -o "save/drinking_water_$DEPLOY_TIME.geojson"
           cls "poi/drinking_water.geojson"
