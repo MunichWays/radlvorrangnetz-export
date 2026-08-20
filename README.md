@@ -6,3 +6,14 @@ Siehe Wiki https://github.com/MunichWays/masterliste/wiki/GeoJSON-Datei-erstelle
 Liest die V20er Datei vom Webspace https://www.munichways.de/App/ und erstellt daraus die V07 App Datei. 
 
 Neu ab 2026 per github workflow aus der V20er Datei erstellen (ohne postgreSQL DB im Carto alt).
+
+## OSM POI-Export
+
+Der Workflow `osmexport.yml` exportiert jeden Montag öffentlich zugängliche
+Trinkwasserstellen aus OpenStreetMap für den Regierungsbezirk Oberbayern nach
+`App/poi/drinking_water.geojson` auf dem Webspace. Manuell kann die Datei mit
+folgendem Befehl erzeugt werden:
+
+```shell
+python scripts/build_osm_drinking_water.py
+```

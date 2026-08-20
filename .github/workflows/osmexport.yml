@@ -1,0 +1,65 @@
+name: Export OSM drinking-water POIs
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "30 3 * * 1"
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Test OSM export
+        run: python -m unittest discover -s tests
+
+      - name: Export drinking-water POIs
+        run: python scripts/build_osm_drinking_water.py
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: osm-drinking-water
+          if-no-files-found: error
+          path: data/poi/drinking_water.geojson
+
+      - name: Install lftp
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes lftp
+
+      - name: Upload GeoJSON to webspace
+        shell: bash
+        env:
+          FTP_SERVER: ${{ vars.FTP_SERVER }}
+          FTP_USERNAME: ${{ vars.FTP_USERNAME }}
+          FTP_PASSWORD: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "$FTP_SERVER" || -z "$FTP_USERNAME" || -z "$FTP_PASSWORD" ]]; then
+            echo "::error::FTP_SERVER and FTP_USERNAME must be Repository Variables; FTP_PASSWORD must be a Repository Secret."
+            exit 1
+          fi
+
+          lftp -u "$FTP_USERNAME","$FTP_PASSWORD" "$FTP_SERVER" <<EOF
+          set cmd:fail-exit yes
+          set ftp:ssl-force yes
+          set ftp:ssl-protect-data yes
+          set ssl:verify-certificate yes
+          set ssl:check-hostname no
+          mkdir -p "poi"
+          put -O "poi" "data/poi/drinking_water.geojson"
+          cls "poi/drinking_water.geojson"
+          bye
+          EOF
