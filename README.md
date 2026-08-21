@@ -10,15 +10,21 @@ Neu ab 2026 per github workflow aus der V20er Datei erstellen (ohne postgreSQL D
 ## OSM POI-Export
 
 Der Workflow `osmexport.yml` exportiert jeden Montag öffentlich zugängliche
-Trinkwasserstellen aus OpenStreetMap für den Regierungsbezirk Oberbayern nach
-`App/poi/drinking_water.geojson` auf dem Webspace. Manuell kann die Datei mit
-folgendem Befehl erzeugt werden:
+Trinkwasserstellen, Toiletten und Fahrrad-Servicestationen aus OpenStreetMap
+für den Regierungsbezirk Oberbayern. Die aktuellen Dateien werden unter
+`App/poi/` auf dem Webspace veröffentlicht.
 
 Exportiert werden ausschließlich Objekte, die ausdrücklich mit
 `drinking_water=yes` gekennzeichnet sind. Die FeatureCollection enthält den
-Erstellungszeitpunkt in UTC. Neben der aktuellen Datei wird jeder Export unter
-`App/save/drinking_water_<Zeitstempel>.geojson` archiviert.
+Erstellungszeitpunkt in UTC. Neben den aktuellen Dateien wird jeder Export mit
+Zeitstempel unter `App/save/` archiviert.
 
 ```shell
 python scripts/build_osm_drinking_water.py
+python scripts/build_osm_public_toilets.py
+python scripts/build_osm_bicycle_repair_stations.py
 ```
+
+Der gemeinsame Workflow heißt `Export OSM POIs`. Er veröffentlicht alle drei
+Dateien unter `App/poi/` und legt für jeden Lauf Zeitstempel-Kopien unter
+`App/save/` ab.

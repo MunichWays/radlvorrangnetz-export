@@ -2,6 +2,7 @@
 """Export publicly accessible drinking-water POIs in Upper Bavaria from OSM."""
 
 import argparse
+import http.client
 import json
 import time
 from datetime import datetime, timezone
@@ -13,6 +14,11 @@ from urllib.request import Request, urlopen
 
 
 DEFAULT_ENDPOINT = "https://overpass-api.de/api/interpreter"
+DEFAULT_ENDPOINTS = (
+    DEFAULT_ENDPOINT,
+    "https://overpass.kumi.systems/api/interpreter",
+    "https://overpass.private.coffee/api/interpreter",
+)
 DEFAULT_OUTPUT = "data/poi/drinking_water.geojson"
 
 OVERPASS_QUERY = """[out:json][timeout:90];
@@ -32,27 +38,39 @@ out tags center;
 """
 
 
-def fetch_overpass(endpoint: str, retries: int = 3) -> dict[str, Any]:
+def fetch_overpass(
+    endpoint: str, query: str = OVERPASS_QUERY, retries: int = 3
+) -> dict[str, Any]:
     """Submit the query to Overpass, retrying temporary network/server errors."""
-    body = urlencode({"data": OVERPASS_QUERY}).encode("utf-8")
-    request = Request(
-        endpoint,
-        data=body,
-        headers={
-            "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
-            "User-Agent": "MunichWays-radlvorrangnetz-export/1.0",
-        },
-    )
+    body = urlencode({"data": query}).encode("utf-8")
+    endpoints = DEFAULT_ENDPOINTS if endpoint == DEFAULT_ENDPOINT else (endpoint,)
+    last_error: Exception | None = None
 
     for attempt in range(1, retries + 1):
-        try:
-            with urlopen(request, timeout=120) as response:
-                return json.load(response)
-        except (HTTPError, URLError, TimeoutError, json.JSONDecodeError):
-            if attempt == retries:
-                raise
+        for current_endpoint in endpoints:
+            request = Request(
+                current_endpoint,
+                data=body,
+                headers={
+                    "Content-Type": "application/x-www-form-urlencoded; charset=UTF-8",
+                    "User-Agent": "MunichWays-radlvorrangnetz-export/1.0",
+                },
+            )
+            try:
+                with urlopen(request, timeout=120) as response:
+                    return json.load(response)
+            except (
+                HTTPError,
+                URLError,
+                TimeoutError,
+                http.client.HTTPException,
+                json.JSONDecodeError,
+            ) as error:
+                last_error = error
+                print(f"Overpass request to {current_endpoint} failed: {error}")
+        if attempt < retries:
             time.sleep(5 * attempt)
-    raise RuntimeError("Overpass request failed")
+    raise RuntimeError("All Overpass endpoints failed") from last_error
 
 
 def element_coordinates(element: dict[str, Any]) -> tuple[float, float] | None:

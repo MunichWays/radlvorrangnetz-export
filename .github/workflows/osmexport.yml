@@ -1,4 +1,4 @@
-name: Export OSM drinking-water POIs
+name: Export OSM POIs
 
 on:
   workflow_dispatch:
@@ -26,6 +26,12 @@ jobs:
       - name: Export drinking-water POIs
         run: python scripts/build_osm_drinking_water.py
 
+      - name: Export public toilets
+        run: python scripts/build_osm_public_toilets.py
+
+      - name: Export public bicycle repair stations
+        run: python scripts/build_osm_bicycle_repair_stations.py
+
       - name: Set backup filename
         shell: bash
         run: echo "DEPLOY_TIME=$(date -u +'%Y-%m-%d_%H-%M-%S')" >> "$GITHUB_ENV"
@@ -33,9 +39,12 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: osm-drinking-water
+          name: osm-pois
           if-no-files-found: error
-          path: data/poi/drinking_water.geojson
+          path: |
+            data/poi/drinking_water.geojson
+            data/poi/public_toilets.geojson
+            data/poi/bicycle_repair_stations.geojson
 
       - name: Install lftp
         run: |
@@ -67,8 +76,16 @@ jobs:
           mkdir -p "save"
           set cmd:fail-exit yes
           put -O "poi" "data/poi/drinking_water.geojson"
+          put -O "poi" "data/poi/public_toilets.geojson"
+          put -O "poi" "data/poi/bicycle_repair_stations.geojson"
           put "data/poi/drinking_water.geojson" -o "save/drinking_water_$DEPLOY_TIME.geojson"
+          put "data/poi/public_toilets.geojson" -o "save/public_toilets_$DEPLOY_TIME.geojson"
+          put "data/poi/bicycle_repair_stations.geojson" -o "save/bicycle_repair_stations_$DEPLOY_TIME.geojson"
           cls "poi/drinking_water.geojson"
+          cls "poi/public_toilets.geojson"
+          cls "poi/bicycle_repair_stations.geojson"
           cls "save/drinking_water_$DEPLOY_TIME.geojson"
+          cls "save/public_toilets_$DEPLOY_TIME.geojson"
+          cls "save/bicycle_repair_stations_$DEPLOY_TIME.geojson"
           bye
           EOF
