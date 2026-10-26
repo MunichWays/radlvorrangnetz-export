@@ -32,10 +32,6 @@ jobs:
             -o data/IST_RadlVorrangNetz_MunichWays_V20.geojson \
             "https://www.munichways.de/App/IST_RadlVorrangNetz_MunichWays_V20.geojson"
 
-      - name: Run export (App V07)
-        run: |
-          python scripts/build_radlvorrangnetz_app_v07.py
-
       - name: Run export (ALL RadlVorrang-Netz Ist)
         run: |
           python scripts/build_all_radlvorrangnetz_ist.py
@@ -56,18 +52,22 @@ jobs:
         run: |
           python scripts/build_kat_markierungen.py   
 
+      - name: Run export (Kategorie vom Fußverkehr getrennt)
+        run: |
+          python scripts/build_kat_fussverkehr_getrennt.py
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: geojson_exports
           if-no-files-found: error
           path: |
-            data/radlvorrangnetz_app_V07.geojson
             data/ALL_RadlVorrangNetz_Ist.geojson
             data/NUR_RadlVorrangNetz_Ist.geojson
             data/Status_Umsetzung_Radentscheid.geojson
             data/ZIEL_RadlVorrangNetz.geojson
             data/Kategorie_Markierungen.geojson
+            data/Kategorie_Fussverkehr_Getrennt.geojson
 
       - name: Prepare FTP upload
         shell: bash
@@ -80,12 +80,12 @@ jobs:
           mkdir -p ftp-upload/current ftp-upload/save
 
           files=(
-            radlvorrangnetz_app_V07.geojson
             ALL_RadlVorrangNetz_Ist.geojson
             NUR_RadlVorrangNetz_Ist.geojson
             Status_Umsetzung_Radentscheid.geojson
             ZIEL_RadlVorrangNetz.geojson
             Kategorie_Markierungen.geojson
+            Kategorie_Fussverkehr_Getrennt.geojson
           )
 
           for file in "${files[@]}"; do
@@ -143,12 +143,12 @@ jobs:
           set -euo pipefail
 
           files=(
-            radlvorrangnetz_app_V07.geojson
             ALL_RadlVorrangNetz_Ist.geojson
             NUR_RadlVorrangNetz_Ist.geojson
             Status_Umsetzung_Radentscheid.geojson
             ZIEL_RadlVorrangNetz.geojson
             Kategorie_Markierungen.geojson
+            Kategorie_Fussverkehr_Getrennt.geojson
           )
 
           for file in "${files[@]}"; do
